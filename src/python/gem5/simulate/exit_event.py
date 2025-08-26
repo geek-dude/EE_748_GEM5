@@ -98,6 +98,8 @@ class ExitEvent(Enum):
             return ExitEvent.SIMPOINT_BEGIN
         elif exit_string == "a thread reached the max instruction count":
             return ExitEvent.MAX_INSTS
+        elif exit_string == "all threads reached the max instruction count":
+            return ExitEvent.MAX_INSTS
         elif exit_string == "performance counter enabled":
             return ExitEvent.PERF_COUNTER_ENABLE
         elif exit_string == "performance counter disabled":
