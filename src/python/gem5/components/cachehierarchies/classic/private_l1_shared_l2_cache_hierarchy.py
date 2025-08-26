@@ -73,12 +73,21 @@ class PrivateL1SharedL2CacheHierarchy(
 
     def __init__(
         self,
-        l1d_size: str,
         l1i_size: str,
+        l1d_size: str,
         l2_size: str,
-        l1d_assoc: int = 8,
         l1i_assoc: int = 8,
+        l1d_assoc: int = 8,
         l2_assoc: int = 16,
+        l1i_tag_latency: int = 1,
+        l1i_data_latency: int = 1,
+        l1i_response_latency: int = 1,
+        l1d_tag_latency: int = 1,
+        l1d_data_latency: int = 1,
+        l1d_response_latency: int = 1,
+        l2_tag_latency: int = 10,
+        l2_data_latency: int = 10,
+        l2_response_latency: int = 1,
         membus: Optional[BaseXBar] = None,
     ) -> None:
         """
@@ -103,6 +112,15 @@ class PrivateL1SharedL2CacheHierarchy(
             l2_size=l2_size,
             l2_assoc=l2_assoc,
         )
+        self._l1i_tag_latency = l1i_tag_latency
+        self._l1i_data_latency = l1i_data_latency
+        self._l1i_response_latency = l1i_response_latency
+        self._l1d_tag_latency = l1d_tag_latency
+        self._l1d_data_latency = l1d_data_latency
+        self._l1d_response_latency = l1d_response_latency
+        self._l2_tag_latency = l2_tag_latency
+        self._l2_data_latency = l2_data_latency
+        self._l2_response_latency = l2_response_latency
 
         self.membus = membus if membus else self._get_default_membus()
 
@@ -126,16 +144,31 @@ class PrivateL1SharedL2CacheHierarchy(
             L1ICache(
                 size=self._l1i_size,
                 assoc=self._l1i_assoc,
+                l1i_tag_latency=self._l1i_tag_latency,
+                l1i_data_latency=self._l1i_data_latency,
+                l1i_response_latency=self._l1i_response_latency,
                 writeback_clean=False,
             )
             for i in range(board.get_processor().get_num_cores())
         ]
         self.l1dcaches = [
-            L1DCache(size=self._l1d_size, assoc=self._l1d_assoc)
+            L1DCache(
+                size=self._l1d_size,
+                assoc=self._l1d_assoc,
+                tag_latency=self._l1d_tag_latency,
+                data_latency=self._l1d_data_latency,
+                response_latency=self._l1d_response_latency,
+            )
             for i in range(board.get_processor().get_num_cores())
         ]
         self.l2bus = L2XBar()
-        self.l2cache = L2Cache(size=self._l2_size, assoc=self._l2_assoc)
+        self.l2cache = L2Cache(
+            size=self._l2_size,
+            assoc=self._l2_assoc,
+            tag_latency=self._l2_tag_latency,
+            data_latency=self._l2_data_latency,
+            response_latency=self._l2_response_latency,
+        )
         # ITLB Page walk caches
         self.iptw_caches = [
             MMUCache(size="8KiB", writeback_clean=False)
