@@ -87,6 +87,19 @@ class PrivateL1PrivateL2CacheHierarchy(
         l1i_size: str,
         l2_size: str,
         membus: BaseXBar | None = None,
+        *,
+        l1i_assoc: int = 8,
+        l1d_assoc: int = 8,
+        l2_assoc: int = 4,
+        l1i_tag_latency: int = 1,
+        l1i_data_latency: int = 1,
+        l1i_response_latency: int = 1,
+        l1d_tag_latency: int = 1,
+        l1d_data_latency: int = 1,
+        l1d_response_latency: int = 1,
+        l2_tag_latency: int = 10,
+        l2_data_latency: int = 10,
+        l2_response_latency: int = 1,
     ) -> None:
         """
         :param l1d_size: The size of the L1 Data Cache (e.g., "32KiB").
@@ -104,12 +117,21 @@ class PrivateL1PrivateL2CacheHierarchy(
         AbstractTwoLevelCacheHierarchy.__init__(
             self,
             l1i_size=l1i_size,
-            l1i_assoc=8,
+            l1i_assoc=l1i_assoc,
             l1d_size=l1d_size,
-            l1d_assoc=8,
+            l1d_assoc=l1d_assoc,
             l2_size=l2_size,
-            l2_assoc=4,
+            l2_assoc=l2_assoc,
         )
+        self._l1i_tag_latency = l1i_tag_latency
+        self._l1i_data_latency = l1i_data_latency
+        self._l1i_response_latency = l1i_response_latency
+        self._l1d_tag_latency = l1d_tag_latency
+        self._l1d_data_latency = l1d_data_latency
+        self._l1d_response_latency = l1d_response_latency
+        self._l2_tag_latency = l2_tag_latency
+        self._l2_data_latency = l2_data_latency
+        self._l2_response_latency = l2_response_latency
 
         self.membus = membus if membus else self._get_default_membus()
 
@@ -135,13 +157,34 @@ class PrivateL1PrivateL2CacheHierarchy(
 
         for i, cpu in enumerate(board.get_processor().get_cores()):
             l2_node = self.add_root_child(
-                f"l2-cache-{i}", L2Cache(size=self._l2_size)
+                f"l2-cache-{i}",
+                L2Cache(
+                    size=self._l2_size,
+                    assoc=self._l2_assoc,
+                    tag_latency=self._l2_tag_latency,
+                    data_latency=self._l2_data_latency,
+                    response_latency=self._l2_response_latency,
+                ),
             )
             l1i_node = l2_node.add_child(
-                f"l1i-cache-{i}", L1ICache(size=self._l1i_size)
+                f"l1i-cache-{i}",
+                L1ICache(
+                    size=self._l1i_size,
+                    assoc=self._l1i_assoc,
+                    tag_latency=self._l1i_tag_latency,
+                    data_latency=self._l1i_data_latency,
+                    response_latency=self._l1i_response_latency,
+                ),
             )
             l1d_node = l2_node.add_child(
-                f"l1d-cache-{i}", L1DCache(size=self._l1d_size)
+                f"l1d-cache-{i}",
+                L1DCache(
+                    size=self._l1d_size,
+                    assoc=self._l1d_assoc,
+                    tag_latency=self._l1d_tag_latency,
+                    data_latency=self._l1d_data_latency,
+                    response_latency=self._l1d_response_latency,
+                ),
             )
 
             self.l2buses[i].mem_side_ports = l2_node.cache.cpu_side

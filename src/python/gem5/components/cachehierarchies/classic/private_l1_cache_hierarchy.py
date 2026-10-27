@@ -69,6 +69,15 @@ class PrivateL1CacheHierarchy(AbstractClassicCacheHierarchy):
         l1d_size: str,
         l1i_size: str,
         membus: BaseXBar | None = None,
+        *,
+        l1i_assoc: int = 8,
+        l1d_assoc: int = 8,
+        l1i_tag_latency: int = 1,
+        l1i_data_latency: int = 1,
+        l1i_response_latency: int = 1,
+        l1d_tag_latency: int = 1,
+        l1d_data_latency: int = 1,
+        l1d_response_latency: int = 1,
     ) -> None:
         """
         :param l1d_size: The size of the L1 Data Cache (e.g., "32KiB").
@@ -84,6 +93,14 @@ class PrivateL1CacheHierarchy(AbstractClassicCacheHierarchy):
         self.membus = membus if membus else self._get_default_membus()
         self._l1d_size = l1d_size
         self._l1i_size = l1i_size
+        self._l1d_assoc = l1d_assoc
+        self._l1i_assoc = l1i_assoc
+        self._l1i_tag_latency = l1i_tag_latency
+        self._l1i_data_latency = l1i_data_latency
+        self._l1i_response_latency = l1i_response_latency
+        self._l1d_tag_latency = l1d_tag_latency
+        self._l1d_data_latency = l1d_data_latency
+        self._l1d_response_latency = l1d_response_latency
 
     @overrides(AbstractClassicCacheHierarchy)
     def get_mem_side_port(self) -> Port:
@@ -102,12 +119,24 @@ class PrivateL1CacheHierarchy(AbstractClassicCacheHierarchy):
             self.membus.mem_side_ports = port
 
         self.l1icaches = [
-            L1ICache(size=self._l1i_size)
+            L1ICache(
+                size=self._l1i_size,
+                assoc=self._l1i_assoc,
+                tag_latency=self._l1i_tag_latency,
+                data_latency=self._l1i_data_latency,
+                response_latency=self._l1i_response_latency,
+            )
             for i in range(board.get_processor().get_num_cores())
         ]
 
         self.l1dcaches = [
-            L1DCache(size=self._l1d_size)
+            L1DCache(
+                size=self._l1d_size,
+                assoc=self._l1d_assoc,
+                tag_latency=self._l1d_tag_latency,
+                data_latency=self._l1d_data_latency,
+                response_latency=self._l1d_response_latency,
+            )
             for i in range(board.get_processor().get_num_cores())
         ]
 
