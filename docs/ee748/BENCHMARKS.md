@@ -1,4 +1,4 @@
-# Course workload notes — pending step-2 validation
+# Course workload reference
 
 The benchmark tree is `/EE_748_gem5/benchmarks/CPU2006`. Obtain the actual course
 files from the TA; this repository does not download or redistribute them. Binary
@@ -17,7 +17,7 @@ Paths are relative to the indicated directory only when explicitly stated.
 | 429.mcf | mcf_base.gcc44-64bit | `REF/inp.in` |
 | 433.milc | milc_base.gcc44-64bit | `--stdin-file REF/su3imp.in`; no `<` argument |
 | 444.namd | namd_base.gcc44-64bit | `--input BENCH/data/all/input/namd.input --iterations 38`; place these in an argument file for `--input-file` |
-| 456.hmmer | hmmer_base.gcc44-64bit | `REF/nph3.hmm REF/swiss41` from last year's batch scripts. The Moodle prose also listed nph3.m; this discrepancy needs validation, not combining all three blindly. |
+| 456.hmmer | hmmer_base.gcc44-64bit | `REF/nph3.hmm REF/swiss41` used in the successful course batch. |
 | 470.lbm | lbm_base.gcc44-64bit | `3000 OUTPUT/reference.dat 0 0 REF/100_100_130_ldc.of`; give each run its own writable output path |
 | 473.astar | astar_base.gcc44-64bit | Run with working directory `REF`, containing both BigLakes2048.cfg and BigLakes2048.bin; argv is `BigLakes2048.cfg` |
 | 482.sphinx3 | sphinx_livepretend_base.gcc44-64bit | Working directory `BENCH/build/build_base_gcc44-64bit.0000`; argv `ctlfile . args.an4` |
@@ -25,35 +25,8 @@ Paths are relative to the indicated directory only when explicitly stated.
 Sphinx setup: copy `an410-fcaw-b.be.raw`, `an409-fcaw-b.be.raw`,
 `an408-fcaw-b.be.raw`, `an407-fcaw-b.be.raw` and `an406-fcaw-b.be.raw` from
 `482.sphinx3/data/train/input` to that build working directory. Verify `ctlfile`
-and `args.an4` exist and refer to the copied inputs. The Moodle text also calls
-the control file `ctlfile.txt`; use the actual supplied filename and update the
-runner if necessary. These copies will be made only during step 2.
-
-Example of the ASTAR working-directory rule, inside Docker:
-
-```bash
-cd /EE_748_gem5/benchmarks/CPU2006/473.astar/data/ref/input
-/EE_748_gem5/gem5/build/X86/gem5.opt \
-  -d /EE_748_gem5/gem5_out/astar-example \
-  /EE_748_gem5/gem5/configs/ee748/se.py \
-  --fastforward-insts 180_800_000_000 \
-  --warmup-insts 200_000_000 --detailed-insts 50_000_000 \
-  --binary ../../../exe/astar_base.gcc44-64bit \
-  --inputs BigLakes2048.cfg
-```
-
-Historical fast-forward budgets retained in the batch runner:
-
-| Workload | Instructions |
-| --- | ---: |
-| astar | 180,800,000,000 |
-| bzip2 | 54,800,000,000 |
-| hmmer | 15,800,000,000 |
-| lbm | 92,800,000,000 |
-| mcf | 305,800,000,000 |
-| milc | 6,800,000,000 |
-| namd | 1,645,800,000,000 |
-| sphinx | 0 |
+and `args.an4` exist and refer to the copied inputs. The validated collection uses `ctlfile`. These inputs must be prepared before
+running; consult the TAs if the distributed collection is incomplete.
 
 Default warmup is 200,000,000 and detailed execution 50,000,000 instructions.
 These are historical assignment values, not recommended smoke-test lengths.

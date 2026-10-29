@@ -28,22 +28,35 @@ if min(args.jobs, args.warmup_insts, args.detailed_insts) < 1:
     )
 root = args.benchmark_root.resolve()
 output = args.output_root.resolve()
-# Historical course workloads/counts, awaiting validation on v26.
+# Replace each None with the instruction count derived from its SimPoints.
+# None deliberately prevents launching with an unanswered assignment value.
 specs = {
-    "astar": ("473.astar", "astar", 180_800_000_000),
-    "bzip2": ("401.bzip2", "bzip2", 54_800_000_000),
-    "hmmer": ("456.hmmer", "hmmer", 15_800_000_000),
-    "lbm": ("470.lbm", "lbm", 92_800_000_000),
-    "mcf": ("429.mcf", "mcf", 305_800_000_000),
-    "milc": ("433.milc", "milc", 6_800_000_000),
-    "namd": ("444.namd", "namd", 1645_800_000_000),
-    "sphinx": ("482.sphinx3", "sphinx_livepretend", 0),
+    "astar": ("473.astar", "astar", None),
+    "bzip2": ("401.bzip2", "bzip2", None),
+    "hmmer": ("456.hmmer", "hmmer", None),
+    "lbm": ("470.lbm", "lbm", None),
+    "mcf": ("429.mcf", "mcf", None),
+    "milc": ("433.milc", "milc", None),
+    "namd": ("444.namd", "namd", None),
+    "sphinx": ("482.sphinx3", "sphinx_livepretend", None),
 }
 selected = args.benchmarks or list(specs)
 if len(set(selected)) != len(selected):
     parser.error("Do not repeat benchmark names in a batch")
 if set(selected) - specs.keys():
     parser.error("Unknown benchmark; choose: " + ", ".join(specs))
+for name in selected:
+    count = specs[name][2]
+    if type(count) is not int or count < 0:
+        parser.error(
+            f"{name}: replace None in run_benchmarks.py with your "
+            "nonnegative integer fast-forward count derived from SimPoints"
+        )
+    if args.mode == "kvm" and 0 < count <= 10_000_000:
+        parser.error(
+            f"{name}: positive KVM fast-forward counts must exceed "
+            "10,000,000; consult the TAs or use --mode atomic"
+        )
 
 
 def run(name):
@@ -110,11 +123,11 @@ def run(name):
         command += ["--input-file", str(out / "arguments.txt")]
     elif inputs:
         command += ["--inputs", *inputs]
-    print(
-        f"{name}: cd {shlex.quote(str(cwd))} && {shlex.join(command)}",
-        flush=True,
-    )
     if args.dry_run:
+        print(
+            f"{name}: cd {shlex.quote(str(cwd))} && {shlex.join(command)}",
+            flush=True,
+        )
         if name == "namd":
             print("arguments.txt: " + shlex.join(inputs), flush=True)
         return 0
@@ -126,6 +139,7 @@ def run(name):
     if not binary.is_file() or not Path(command[0]).is_file():
         print(f"{name}: missing gem5 binary or benchmark: {binary}")
         return 1
+    print(f"{name}: starting ({args.mode}); logs in {out}", flush=True)
     out.mkdir(parents=True)
     if name == "namd":
         (out / "arguments.txt").write_text(shlex.join(inputs) + "\n")

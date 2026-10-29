@@ -2,7 +2,7 @@
 
 ## Repository identity and publication
 
-This candidate preserves the personal fork's history through
+This repository preserves the personal fork's history through
 `9ddfa52b2` and merges official tag `v26.0.0.0`, commit
 `fed0e07e930fecf1e73dce94dd44e69a5bf70c46`. The working branch is
 `codex/ee748-setup`. It is a separate repository, not a change to the personal fork.
@@ -22,7 +22,8 @@ git push https://github.com/geek-dude/EE_748_GEM5.git codex/ee748-setup:main
 
 After validation, create a course tag and publish that specific tag by the same
 URL. The GitHub repo is the publication destination; `upstream` remains the sole
-configured remote. Never use a mirror push.
+configured remote. Never use a mirror push to update the shared course repository. Students
+may use a one-time mirror push to initialize their own empty private repository.
 
 Before enabling inherited GitHub Actions, review the upstream workflows: some
 are gem5-maintainer infrastructure and may require unavailable secrets or
@@ -31,7 +32,16 @@ self-hosted runners. Review these settings before relying on hosted CI results.
 For a local handoff before publication, copy the entire workspace including
 `gem5/.git`, or clone the local repository into a fresh workspace's `gem5`
 directory. Do not copy a `.git` alternates file pointing to a temporary checkout.
-Set up the one-remote policy in each fresh clone as documented in README.md.
+For maintainer clones, configure the one-remote policy explicitly:
+
+```bash
+git remote remove origin
+git remote add upstream https://github.com/gem5/gem5.git
+git remote set-url --push upstream DISABLED
+git config push.default nothing
+```
+
+Student clones instead retain `origin` pointing to their private team repository.
 
 ## Freeze the validated year
 
@@ -88,7 +98,7 @@ is a porting recipe, not an already tested fallback. Prefer a separate checkout
 when preserving v26 build output. Never reuse checkpoints across versions
 without establishing compatibility.
 
-## Step 2 (intentionally not performed during step 1)
+## Validation checklist
 
 - Receive the remote machine's SSH address/user and the authorized benchmark
   source/location. Verify architecture, Docker access, resources and KVM/perf.
@@ -105,3 +115,91 @@ without establishing compatibility.
   outputs, failure propagation, useful stats and workload completion.
 - Review checkpoint examples independently before recommending them.
 - If v26 fails for a release-specific reason, port to v25.1.0.1 and repeat checks.
+
+## Validation status
+
+The instructor reports that all eight CPU2006 batch simulations completed
+successfully with gem5 v26.0.0.0 in the dependency container, using x86 KVM
+and four concurrent jobs. The initial run required KVM group membership,
+`kernel.perf_event_paranoid=1`, and five missing Sphinx audio inputs.
+HMMER used `nph3.hmm` and `swiss41`; Sphinx used `ctlfile`.
+
+The revised CPU-count-based concurrency default still needs the final course
+validation run. Benchmark distribution instructions are pending. Completion
+does not establish detailed-phase instruction accounting, multicore correctness,
+checkpoint restoration or portability to other host platforms. Retain the
+checklist above for those checks and record the image digest before freezing
+the student snapshot.
+
+## Development and configuration reference
+
+Rerun SCons after changing `src/`; standalone configuration changes normally
+do not need rebuilding. For major release/toolchain changes, move the old build
+directory aside and build afresh. Do not mix host/container build artifacts.
+
+Course scripts retain the personal fork's cache latency and associativity
+extensions. The former exercise to expose these options is already completed.
+`se.py` uses ATOMIC fast-forward, TIMING warmup and O3 detailed execution.
+`se_kvm.py` adds KVM followed by a short ATOMIC correction; positive KVM
+fast-forward counts must exceed 10,000,000 instructions. Even a zero count
+requires KVM support when selecting that script. Limits are per thread/core.
+
+Students derive fast-forward instruction counts from the supplied SimPoints
+and replace `None` entries in `configs/ee748/run_benchmarks.py`. Both batch
+runners reject unset/invalid selected entries before launching any simulation.
+The parallel wrapper defaults to KVM; `--mode atomic` selects the fallback.
+Keep worked answers out of the published tree, including maintainer examples.
+Earlier published Git history contains historical counts; removing them from
+the current tree is not secrecy and does not erase that history.
+
+Checkpoint examples in `configs/ee748/Checkpoint_Scripts` remain experimental;
+review their paths, instruction-stop APIs and restoration before recommending
+them. They are not part of the student batch workflow.
+
+To generate source documentation inside the container:
+
+```bash
+cd /EE_748_gem5/gem5/src
+doxygen
+```
+
+Open `gem5/src/doxygen/html/index.html` from the host workspace.
+
+## Configuration options and argument handling
+
+`--binary`, `--warmup-insts` and `--detailed-insts` are required. Fast-forward
+defaults to zero. Other defaults are one core, 3 GHz, 8 GiB memory, 32 KiB L1I/L1D,
+256 KiB L2, associativity 8/8/4, L1 tag/data/response latency 1/1/1 and L2
+10/10/1. The full list is available through `--help`. Cache latency options use
+`--l1i-tag-latency`, `--l1i-data-latency`, `--l1i-response-latency` and the
+corresponding `l1d`/`l2` names.
+
+These options are enabled by this fork's retained cache extensions. Last year's
+exercise about uncommenting the options and exposing them in the hierarchy is
+already completed here. The example above intentionally overrides L2
+associativity to 16; omitting it retains the original hierarchy default of 4.
+
+`se.py` uses ATOMIC fast-forward, TIMING warmup, then O3 detailed execution.
+With zero fast-forward it starts in TIMING. Instruction limits are scheduled per
+thread/core, not a total multicore work budget. Use the one-core baseline until
+multicore phase accounting has been checked. Read the configuration
+before adapting it to a new experiment; it is a teaching starting point.
+
+### Arguments versus standard input
+
+Use `--inputs` for ordinary positional arguments. For a workload with its own
+options, use `--input-file` pointing to a text file containing its argument list:
+
+```text
+--input /EE_748_gem5/benchmarks/CPU2006/444.namd/data/all/input/namd.input --iterations 38
+```
+
+Pass that file as `--input-file ../benchmarks/CPU2006/444.namd/namd_inputs.txt`.
+The file is parsed with shell-style quoting, without executing a shell. Variables,
+`~`, pipes and redirection are not expanded. Relative arguments resolve against
+the simulation's working directory, not the argument file's directory.
+
+For workloads that read standard input (MILC, GAMESS), use `--stdin-file PATH`.
+Do **not** pass `<` through `--inputs` or assume redirecting the gem5 host process
+configures the simulated process. `--input-file` supplies argv; `--stdin-file`
+supplies the simulated program's stdin.
