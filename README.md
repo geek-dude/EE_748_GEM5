@@ -2,8 +2,7 @@
 
 This repository provides **gem5 v26.0.0.0**, course simulation configurations,
 and a Docker workflow. The instructor has confirmed successful completion of
-the eight-benchmark KVM batch. Benchmark distribution instructions and a final
-validation run are still pending before student release.
+the eight-benchmark KVM batch. A final validation run is pending before student release.
 
 Benchmark binaries and inputs are supplied separately by the course. Keep them
 and simulation results outside Git. Initial setup needs Internet access.
@@ -47,7 +46,7 @@ only apply course updates when instructed by the TAs.
 ```text
 EE_748_gem5/
 ├── run-gem5-container.sh       # installed by setup
-├── benchmarks/CPU2006/        # course binaries and inputs, outside Git
+├── benchmarks/               # CPU2006/ and simpoint_results/, outside Git
 ├── gem5_out/                  # simulation results, outside Git
 └── gem5/                      # your private repository's working copy
     ├── configs/ee748/         # course configurations and batch runners
@@ -70,10 +69,20 @@ bash util/ee748/step_1_setup-docker.sh
 It installs Ubuntu's `docker.io` package if Docker is absent, starts the service,
 and adds your user to the Docker group. `sudo` prompts for your password when
 needed. A working existing Docker installation is left alone. Log out of the
-whole desktop session and log back in if the script requests it, then check:
+whole desktop session and log back in if the script requests it (for SSH,
+disconnect and reconnect), then check:
 
 ```bash
 docker run --rm hello-world
+```
+
+If a Docker reinstall fails with “no sockets found via socket activation”,
+recover on the host, then rerun the installer:
+
+```bash
+sudo systemctl stop docker.service docker.socket
+sudo systemctl reset-failed docker.service docker.socket
+sudo systemctl start docker.socket docker.service
 ```
 
 Docker-group membership grants root-equivalent control of the host. This script
@@ -128,11 +137,38 @@ Pulling the image does not compile gem5.
 
 ## 4. Obtain the benchmarks
 
-Course server details and the exact `rsync` command will be added here before
-release. The destination is `~/EE_748_gem5/benchmarks/CPU2006`, **outside** the
-`gem5` repository. Do not commit benchmark binaries or inputs to your team repo.
-See [workload notes](docs/ee748/BENCHMARKS.md) for required files and Sphinx
-input preparation; ask the TAs if any files are missing.
+Run this on the **host**, connected to the IITB campus network. From outside
+campus, connect to the institute VPN first. Install `rsync` if it is absent
+(`sudo apt install rsync` on Ubuntu).
+
+```bash
+mkdir -p ~/EE_748_gem5/benchmarks
+rsync -rltvLP --stats benchmark@10.107.105.248:EE_748_student/ ~/EE_748_gem5/benchmarks/
+```
+
+Enter the course benchmark account password supplied by the instructor when
+prompted. Adjust the destination if your workspace is elsewhere. The trailing
+slash on the source copies its contents directly into `benchmarks/`. The `-P`
+option shows progress and retains partial files; rerun the command to resume
+an interrupted transfer. Add `-n` only to preview without downloading. Do not
+use `-u`: it can silently retain newer local inputs instead of the course copy.
+
+After transfer completes, you should have:
+
+```text
+EE_748_gem5/benchmarks/
+├── CPU2006/             # benchmark executables and inputs
+└── simpoint_results/    # SimPoint information, grouped by workload
+```
+
+Use the files under `simpoint_results/<workload>/` for the assignment. For
+example, ASTAR includes `astar/1000M/simpoint_output.astar`. Sphinx is named
+`sphinx_livepretend` in this tree. Interpret the interval size and SimPoint
+output according to the assignment; the runner requires instruction counts.
+
+The `EE_748_student` server copy includes the required Sphinx input preparation.
+No manual file copying or argument-file creation is needed: the runner handles
+NAMD arguments and MILC standard input. Keep benchmarks outside your Git repo.
 
 ## 5. Enable KVM on the host
 
@@ -228,7 +264,7 @@ restart failed KVM jobs. `MAX_JOBS` also works in this mode.
 ### Check results
 
 Each benchmark directory under the chosen output root contains `run.log`,
-`stats.txt`, `config.ini`/`config.json`, and `exit-code.txt`. An exit code of
+`stats.log`, `config.ini`/`config.json`, and `exit-code.txt`. An exit code of
 `0` means the process succeeded; any failed workload makes the batch return
 nonzero. Check logs and detailed-phase statistics before using results, since
 a workload can exit before a requested instruction limit.

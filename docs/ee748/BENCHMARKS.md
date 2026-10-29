@@ -22,11 +22,10 @@ Paths are relative to the indicated directory only when explicitly stated.
 | 473.astar | astar_base.gcc44-64bit | Run with working directory `REF`, containing both BigLakes2048.cfg and BigLakes2048.bin; argv is `BigLakes2048.cfg` |
 | 482.sphinx3 | sphinx_livepretend_base.gcc44-64bit | Working directory `BENCH/build/build_base_gcc44-64bit.0000`; argv `ctlfile . args.an4` |
 
-Sphinx setup: copy `an410-fcaw-b.be.raw`, `an409-fcaw-b.be.raw`,
-`an408-fcaw-b.be.raw`, `an407-fcaw-b.be.raw` and `an406-fcaw-b.be.raw` from
-`482.sphinx3/data/train/input` to that build working directory. Verify `ctlfile`
-and `args.an4` exist and refer to the copied inputs. The validated collection uses `ctlfile`. These inputs must be prepared before
-running; consult the TAs if the distributed collection is incomplete.
+The prepared `EE_748_student` distribution already includes the five Sphinx
+audio files required by `ctlfile` in its build working directory. Students do
+not need to copy them. The batch runner creates the NAMD argument file and
+sets MILC stdin automatically.
 
 Default warmup is 200,000,000 and detailed execution 50,000,000 instructions.
 These are historical assignment values, not recommended smoke-test lengths.

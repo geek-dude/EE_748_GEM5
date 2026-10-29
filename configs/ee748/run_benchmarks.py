@@ -106,7 +106,7 @@ def run(name):
         str(REPO / "build/X86/gem5.opt"),
         "-d",
         str(out),
-        "--stats-file=stats.txt",
+        "--stats-file=stats.log",
         str(config),
         "--fastforward-insts",
         str(fastforward),

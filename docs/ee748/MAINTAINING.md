@@ -203,3 +203,16 @@ For workloads that read standard input (MILC, GAMESS), use `--stdin-file PATH`.
 Do **not** pass `<` through `--inputs` or assume redirecting the gem5 host process
 configures the simulated process. `--input-file` supplies argv; `--stdin-file`
 supplies the simulated program's stdin.
+
+## Prepared benchmark distribution
+
+Serve `benchmark@10.107.105.248:EE_748_student/`. This is a separate copy of
+`EE_748/`, preserving the original collection. Five Sphinx audio inputs
+`an406-fcaw-b.be.raw` through `an410-fcaw-b.be.raw` are copied from
+`482.sphinx3/data/train/input` into its build working directory. Verify all
+15 `ctlfile` audio inputs and `args.an4` model paths before publishing updates.
+Do not run simulations in the server distribution. The student rsync command
+copies both CPU2006 and simpoint_results, follows symlinks and keeps partial
+transfers. The original command's `-n` was a dry run; `-u` was removed to avoid
+silently retaining modified inputs. Distribute the account password through
+the course channel rather than the public repository.
