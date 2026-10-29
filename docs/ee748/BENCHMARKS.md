@@ -13,7 +13,7 @@ Paths are relative to the indicated directory only when explicitly stated.
 | --- | --- | --- |
 | 400.perlbench | perlbench (verify actual suffix) | `BENCH/data/all/input/splitmail.pl 1600 12 26 16 4500`; use `--inputs`. Not yet in the batch list. |
 | 401.bzip2 | bzip2_base.gcc44-64bit | `REF/input.source` |
-| 416.gamess | gamess (verify actual suffix) | stdin from `cytosine.2.config`; locate it in the supplied tree. Historical binary needs libgfortran.so.3, which is not supplied by libgfortran5. Excluded pending dependency work. |
+| 416.gamess | gamess_base.gcc44-64bit | Optional; see README runtime setup. stdin from REF/cytosine.2.config; runner copies inputs to its output working directory. |
 | 429.mcf | mcf_base.gcc44-64bit | `REF/inp.in` |
 | 433.milc | milc_base.gcc44-64bit | `--stdin-file REF/su3imp.in`; no `<` argument |
 | 444.namd | namd_base.gcc44-64bit | `--input BENCH/data/all/input/namd.input --iterations 38`; place these in an argument file for `--input-file` |

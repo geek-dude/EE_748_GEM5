@@ -288,3 +288,30 @@ records are in [MAINTAINING.md](docs/ee748/MAINTAINING.md).
 [PROVENANCE.md](docs/ee748/PROVENANCE.md) records the source history. Upstream
 licenses remain in [LICENSE](LICENSE), and the original project overview is in
 [UPSTREAM_README.md](docs/ee748/UPSTREAM_README.md).
+
+## Optional GAMESS (x86 Linux container)
+
+GAMESS needs the old `libgfortran.so.3` ABI. The host Ubuntu release does not
+matter for this workflow; run the following inside the course's Ubuntu 24.04
+x86_64 container, from `/EE_748_gem5/gem5`:
+
+```bash
+bash util/ee748/setup-gamess-runtime.sh
+```
+
+This downloads a checksum-pinned package from the Ubuntu archive and extracts
+it into the sibling `legacy-runtime` directory, without sudo or adding old apt
+repositories. Do not symlink libgfortran.so.5 to libgfortran.so.3.
+
+Fill in the optional `gamess` fast-forward entry in `run_benchmarks.py` according
+to the assignment, then run it explicitly:
+
+```bash
+bash configs/ee748/run_multiple_parallel.sh --output-root ../gem5_out/gamess-run gamess
+```
+
+The default batch remains the eight established workloads. To include GAMESS,
+list all nine names explicitly. The runner selects the isolated library path,
+copies GAMESS inputs to its output directory for private scratch files, and
+supplies `cytosine.2.config` through `--stdin-file`. Do not pass `<` in `--inputs`.
+A short warmup/detailed probe passed; full-workload validation is pending.

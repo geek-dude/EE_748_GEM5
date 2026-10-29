@@ -94,6 +94,9 @@ parser.add_argument("--l2-tag-latency", type=int, default=10)
 parser.add_argument("--l2-data-latency", type=int, default=10)
 parser.add_argument("--l2-response-latency", type=int, default=1)
 parser.add_argument("--stdin-file", help="File supplied to benchmark stdin")
+parser.add_argument(
+    "--library-path", help="Library path for the simulated binary"
+)
 args = parser.parse_args()
 if 0 < args.fastforward_insts <= 10_000_000:
     parser.error(
@@ -201,6 +204,11 @@ else:
 board.set_se_binary_workload(
     binary,
     arguments=inputs,
+    env_list=(
+        [f"LD_LIBRARY_PATH={Path(args.library_path).resolve()}"]
+        if args.library_path
+        else None
+    ),
     stdin_file=(
         FileResource(str(Path(args.stdin_file).resolve()))
         if args.stdin_file

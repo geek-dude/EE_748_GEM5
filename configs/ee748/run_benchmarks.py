@@ -39,8 +39,9 @@ specs = {
     "milc": ("433.milc", "milc", None),
     "namd": ("444.namd", "namd", None),
     "sphinx": ("482.sphinx3", "sphinx_livepretend", None),
+    "gamess": ("416.gamess", "gamess", None),
 }
-selected = args.benchmarks or list(specs)
+selected = args.benchmarks or [name for name in specs if name != "gamess"]
 if len(set(selected)) != len(selected):
     parser.error("Do not repeat benchmark names in a batch")
 if set(selected) - specs.keys():
@@ -93,6 +94,9 @@ def run(name):
             "--iterations",
             "38",
         ]
+    elif name == "gamess":
+        inputs = []
+        stdin = ref / "cytosine.2.config"
     else:
         cwd = bench / "build/build_base_gcc44-64bit.0000"
         inputs = ["ctlfile", ".", "args.an4"]
@@ -117,6 +121,12 @@ def run(name):
         "--binary",
         str(binary),
     ]
+    if name == "gamess":
+        library = REPO.parent / "legacy-runtime/usr/lib/x86_64-linux-gnu"
+        if not args.dry_run and not (library / "libgfortran.so.3").is_file():
+            print("gamess: run util/ee748/setup-gamess-runtime.sh first")
+            return 1
+        command += ["--library-path", str(library)]
     if stdin:
         command += ["--stdin-file", str(stdin)]
     if name == "namd":
@@ -141,6 +151,13 @@ def run(name):
         return 1
     print(f"{name}: starting ({args.mode}); logs in {out}", flush=True)
     out.mkdir(parents=True)
+    if name == "gamess":
+        # GAMESS resolves its input and scratch files against its working dir.
+        import shutil
+
+        for source in ref.iterdir():
+            if source.is_file():
+                shutil.copy2(source, out / source.name)
     if name == "namd":
         (out / "arguments.txt").write_text(shlex.join(inputs) + "\n")
     try:
