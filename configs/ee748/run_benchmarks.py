@@ -2,9 +2,15 @@
 """EE 748 batch driver, distributed under the repository LICENSE."""
 
 import argparse
+import json
 import shlex
 import subprocess
+import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import (
+    datetime,
+    timezone,
+)
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -41,7 +47,7 @@ specs = {
     "sphinx": ("482.sphinx3", "sphinx_livepretend", None),
     "gamess": ("416.gamess", "gamess", None),
 }
-selected = args.benchmarks or [name for name in specs if name != "gamess"]
+selected = args.benchmarks or list(specs)
 if len(set(selected)) != len(selected):
     parser.error("Do not repeat benchmark names in a batch")
 if set(selected) - specs.keys():
@@ -177,6 +183,39 @@ def run(name):
         return 1
 
 
-with ThreadPoolExecutor(max_workers=args.jobs) as pool:
-    statuses = list(pool.map(run, selected))
-raise SystemExit(1 if any(statuses) else 0)
+if args.dry_run:
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        statuses = list(pool.map(run, selected))
+    raise SystemExit(1 if any(statuses) else 0)
+
+output.mkdir(parents=True, exist_ok=True)
+timing_path = output / "batch-timing.json"
+# Reserve this root so timing records cannot be overwritten by a second batch.
+with timing_path.open("x") as timing_file:
+    json.dump({"status": "running"}, timing_file)
+started_at = datetime.now(timezone.utc).isoformat()
+started = time.perf_counter()
+exit_code = 1
+statuses = []
+try:
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        statuses = list(pool.map(run, selected))
+    exit_code = 1 if any(statuses) else 0
+finally:
+    elapsed = time.perf_counter() - started
+    record = {
+        "status": (
+            "finished" if len(statuses) == len(selected) else "interrupted"
+        ),
+        "started_at_utc": started_at,
+        "finished_at_utc": datetime.now(timezone.utc).isoformat(),
+        "elapsed_seconds": round(elapsed, 3),
+        "jobs": args.jobs,
+        "mode": args.mode,
+        "benchmarks": selected,
+        "exit_codes": dict(zip(selected, statuses)),
+        "batch_exit_code": exit_code,
+    }
+    timing_path.write_text(json.dumps(record, indent=2) + "\n")
+    print(f"Batch wall time: {elapsed:.1f} seconds; {timing_path}", flush=True)
+raise SystemExit(exit_code)

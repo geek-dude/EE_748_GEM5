@@ -118,18 +118,28 @@ without establishing compatibility.
 
 ## Validation status
 
-The instructor reports that all eight CPU2006 batch simulations completed
-successfully with gem5 v26.0.0.0 in the dependency container, using x86 KVM
-and four concurrent jobs. The initial run required KVM group membership,
-`kernel.perf_event_paranoid=1`, and five missing Sphinx audio inputs.
-HMMER used `nph3.hmm` and `swiss41`; Sphinx used `ctlfile`.
+All nine CPU2006 workloads, including GAMESS, completed the configured
+200M warmup / 50M detailed flow with exit 0 in the x86 KVM dependency
+container. Logs were inspected for phase completion. This establishes
+execution, not reference-output correctness or exact instruction boundaries;
+logs contain phase-count overshoot that needs accounting in research results.
+GAMESS used the isolated libgfortran3 runtime and no fast-forward in this run.
 
-The revised CPU-count-based concurrency default still needs the final course
-validation run. Benchmark distribution instructions are pending. Completion
-does not establish detailed-phase instruction accounting, multicore correctness,
-checkpoint restoration or portability to other host platforms. Retain the
-checklist above for those checks and record the image digest before freezing
-the student snapshot.
+A private Assignment 1 baseline probe also passed all nine workloads with
+1M warmup / 5M detailed instructions and the established fast-forward counts.
+The generated configuration was checked for all seven pipeline widths of 4,
+IQ 64, LQ/SQ 32 each, ROB 192, TAGE-SC-L 8 KB, BTB/RAS 4096/32, and the
+three-level cache sizes, associativities, latencies and MSHRs from Table 2.
+The v26 IQ API is `instQueues` / `IQUnit`, not `numIQEntries`. The private
+baseline files and filled fast-forward counts are not published to students.
+
+The batch timing feature passed success/failure tests and a live BZIP2 run
+(4.110 seconds, exit 0). It records parallel wall time with a monotonic clock,
+UTC boundaries and exit codes. Old batches did not have this record; their
+total duration cannot be reconstructed reliably by summing gem5 host times.
+The dependency image manifest observed during fresh setup was
+`sha256:5c35d113a213984f765d700df870ea70f1e89baa801b177886ac784976b3e19e`.
+Checkpoint restoration and ARM/Windows/macOS portability remain unvalidated.
 
 ## Development and configuration reference
 

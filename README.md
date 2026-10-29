@@ -1,8 +1,8 @@
 # EE 748 — Advanced Topics in Computer Architecture
 
 This repository provides **gem5 v26.0.0.0**, course simulation configurations,
-and a Docker workflow. The instructor has confirmed successful completion of
-the eight-benchmark KVM batch. A final validation run is pending before student release.
+and a Docker workflow. All nine benchmark simulations, including GAMESS, have completed the
+course warmup/detailed flow successfully in the x86 KVM container.
 
 Benchmark binaries and inputs are supplied separately by the course. Keep them
 and simulation results outside Git. Initial setup needs Internet access.
@@ -117,7 +117,8 @@ cd ..
 ./run-gem5-container.sh
 ```
 
-Setup pulls `ghcr.io/gem5/ubuntu-24.04_all-dependencies:v24-1`, creates sibling
+Setup pulls the pinned gem5 Ubuntu 24.04 dependency image recorded in
+`util/ee748/container.env`, creates sibling
 benchmark/output directories and installs the launcher. It uses your existing
 clone and will not overwrite a locally modified launcher. The container runs
 with your UID/GID.
@@ -170,6 +171,27 @@ The `EE_748_student` server copy includes the required Sphinx input preparation.
 No manual file copying or argument-file creation is needed: the runner handles
 NAMD arguments and MILC standard input. Keep benchmarks outside your Git repo.
 
+### GAMESS runtime (required for the nine-workload batch)
+
+GAMESS needs the old `libgfortran.so.3` ABI. The host Ubuntu release does not
+matter for this workflow; run the following inside the course's Ubuntu 24.04
+x86_64 container, from `/EE_748_gem5/gem5`:
+
+```bash
+bash util/ee748/setup-gamess-runtime.sh
+```
+
+This downloads a checksum-pinned package from the Ubuntu archive and extracts
+it into the sibling `legacy-runtime` directory, without sudo or adding old apt
+repositories. Do not symlink libgfortran.so.5 to libgfortran.so.3.
+
+The batch runner selects the isolated library path, copies GAMESS inputs into
+its output directory for private scratch files, and supplies `cytosine.2.config`
+through `--stdin-file`. Do not pass `<` in `--inputs`. This workflow was tested
+in the course x86_64 Ubuntu 24.04 container; the host Ubuntu release does not
+supply its runtime. ARM/macOS execution of this legacy x86 workload is not
+validated.
+
 ## 5. Enable KVM on the host
 
 Use an x86 Linux machine with virtualization enabled in its firmware and
@@ -221,11 +243,11 @@ cd /EE_748_gem5/gem5
 bash configs/ee748/run_multiple_parallel.sh --output-root ../gem5_out/baseline-kvm
 ```
 
-The script runs all eight workloads using your fast-forward counts, then
+The script runs all nine workloads using your fast-forward counts, then
 200 million warmup and 50 million detailed instructions. It defaults to KVM
 and **one fewer concurrent
 job than the CPUs available to the container**, with a minimum of one. At most
-eight jobs run for the eight-workload batch. These are separate simulations,
+nine jobs run for the nine-workload batch. These are separate simulations,
 not extra cores in each simulated system.
 
 **Your PC may become sluggish.** Each job also consumes memory. Reduce
@@ -238,7 +260,7 @@ MAX_JOBS=4 bash configs/ee748/run_multiple_parallel.sh --output-root ../gem5_out
 Choose a fresh output root for each experiment. Existing benchmark output
 directories are refused. Do not run overlapping batches against the same
 benchmark tree. To select workloads, append their names, for example `astar
-bzip2`; the complete set is `astar bzip2 hmmer lbm mcf milc namd sphinx`.
+bzip2`; the complete set is `astar bzip2 hmmer lbm mcf milc namd sphinx gamess`.
 `--dry-run` previews commands without running them or checking input existence.
 
 ### If KVM does not work
@@ -262,6 +284,14 @@ can take much longer. The fallback is explicit; the runner does not silently
 restart failed KVM jobs. `MAX_JOBS` also works in this mode.
 
 ### Check results
+
+The batch root contains `batch-timing.json`, with UTC start/end times, total
+wall-clock `elapsed_seconds`, concurrency, mode and exit codes. Its elapsed
+time includes the whole parallel batch; do not add individual gem5 host times
+to estimate it. Compare runs on similar hardware and with similar concurrency.
+While running the file has status `running`; after completion it contains the
+full summary. A forced kill or host crash can leave it incomplete. Dry runs
+create no timing files. Select a new output root for every batch.
 
 Each benchmark directory under the chosen output root contains `run.log`,
 `stats.log`, `config.ini`/`config.json`, and `exit-code.txt`. An exit code of
@@ -289,29 +319,7 @@ records are in [MAINTAINING.md](docs/ee748/MAINTAINING.md).
 licenses remain in [LICENSE](LICENSE), and the original project overview is in
 [UPSTREAM_README.md](docs/ee748/UPSTREAM_README.md).
 
-## Optional GAMESS (x86 Linux container)
 
-GAMESS needs the old `libgfortran.so.3` ABI. The host Ubuntu release does not
-matter for this workflow; run the following inside the course's Ubuntu 24.04
-x86_64 container, from `/EE_748_gem5/gem5`:
-
-```bash
-bash util/ee748/setup-gamess-runtime.sh
-```
-
-This downloads a checksum-pinned package from the Ubuntu archive and extracts
-it into the sibling `legacy-runtime` directory, without sudo or adding old apt
-repositories. Do not symlink libgfortran.so.5 to libgfortran.so.3.
-
-Fill in the optional `gamess` fast-forward entry in `run_benchmarks.py` according
-to the assignment, then run it explicitly:
-
-```bash
-bash configs/ee748/run_multiple_parallel.sh --output-root ../gem5_out/gamess-run gamess
-```
-
-The default batch remains the eight established workloads. To include GAMESS,
-list all nine names explicitly. The runner selects the isolated library path,
-copies GAMESS inputs to its output directory for private scratch files, and
-supplies `cytosine.2.config` through `--stdin-file`. Do not pass `<` in `--inputs`.
-A short warmup/detailed probe passed; full-workload validation is pending.
+The provided scripts are starting points. Configure and verify the system
+required by each assignment; their defaults do not implement Assignment 1's
+full Table 2 baseline. Inspect `config.ini`/`config.json` before collecting data.
