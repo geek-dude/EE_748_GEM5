@@ -37,9 +37,23 @@ has started. `course-import.git` is a temporary bare copy, not your working
 directory; it can be deleted after the push and clone succeed.
 
 Work in `~/EE_748_gem5/gem5`. Its `origin` should point to your private team
-repository. Commit assignment changes there and use ordinary `git push origin
-main` (or your team's branch). Keep the course baseline fixed during assignments;
-only apply course updates when instructed by the TAs.
+repository. Create a separate branch for each assignment and the research
+project, for example `assignment-1`, `assignment-2`, and `research-project`.
+Commit and push each task's changes on its corresponding branch. Keep `main`
+as the course baseline and only apply course updates when instructed by the TAs.
+
+For example, start Assignment 1 from `main` and publish its branch:
+
+```bash
+git switch main
+git switch -c assignment-1
+git push -u origin assignment-1
+```
+
+Repeat from `main` with `assignment-2` or `research-project` when starting those
+tasks. Commit your current work before switching branches. If a task builds on
+an earlier assignment, follow the instructor's directions about which branch
+to start from.
 
 ## Workspace layout
 
